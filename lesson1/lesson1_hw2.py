@@ -118,7 +118,7 @@ with open(os.path.join(DIR, 'test_file.txt'), 'w', encoding='UTF-8') as f_w:
     f_w.write('сетевое программирование\n')
     f_w.write('сокет\n')
     f_w.write('декоратор')
-    f_w.close()
+    # f_w.close()
 
 with open(os.path.join(DIR, 'test_file.txt'), 'r') as f_r1:
     for _ in f_r1:
