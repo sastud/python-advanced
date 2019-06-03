@@ -44,9 +44,14 @@ lib_2.write_to_csv(DIR, 'result.csv', res)
     в нее значений каждого параметра.
 '''
 
+print('\n')
+item = input('Товар: ')
+quantity = input('Количество: ')
+price = input('Цена: ')
+buyer = input('Покупатель: ')
+date = input('Дата: ')
 
-
-
+lib_2.write_order_to_json(DIR, 'orders.json', item, quantity, price, buyer, date)
 
 '''
 3. Задание на закрепление знаний по модулю yaml. Написать скрипт, автоматизирующий
@@ -63,3 +68,13 @@ lib_2.write_to_csv(DIR, 'result.csv', res)
     с исходными.
 '''
 
+order = {'n': ['смартфон'],
+         'q': 1,
+         'p': {'dollar': '100$',
+               'euro': '89€',
+               'ruble': '6534₽'}}
+print(order)
+print('\t')
+
+lib_2.write_to_yaml(DIR, 'order.yaml', order)
+print(lib_2.read_from_yaml(DIR, 'order.yaml'))

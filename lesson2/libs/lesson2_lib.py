@@ -1,8 +1,8 @@
-# библиотека функций
-
 import os
 import re
 import csv
+import json
+import yaml
 
 
 def get_data(d, f_list):
@@ -37,7 +37,7 @@ def get_data(d, f_list):
     main_data = [headers]
     for i in range(3):
         t = []
-        t = [os_prod_list[i],os_name_list[i],os_code_list[i],os_type_list[i]]
+        t = [os_prod_list[i], os_name_list[i], os_code_list[i], os_type_list[i]]
         main_data.append(t)
     return main_data
 
@@ -49,3 +49,26 @@ def write_to_csv(d, f_name, l_name):
     return
 
 
+def write_order_to_json(dir, f_name, i, q, p, b, d):
+    orders_json = {"Товар": i,
+                   "Количество": q,
+                   "Цена": p,
+                   "Покупатель": b,
+                   "Дата": d}
+    with open(os.path.join(dir, f_name), 'a+', encoding='utf8') as f_w:
+        json.dump(orders_json, f_w, indent=4, ensure_ascii=False)
+        f_w.write('\n')
+    return
+
+
+def write_to_yaml(dir, f_name, d_name):
+    with open(os.path.join(dir, f_name), 'w', encoding='utf8') as f_w:
+        yaml.dump(d_name, f_w, default_flow_style=False, allow_unicode=True)
+        f_w.write('\n')
+    return
+
+
+def read_from_yaml(dir, f_name):
+    with open(os.path.join(dir, f_name), 'r', encoding='utf8') as f_r:
+        res = f_r.read()
+    return res
