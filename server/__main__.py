@@ -2,6 +2,7 @@ import yaml
 import socket
 import json
 import logging
+import select
 from argparse import ArgumentParser
 from actions import resolve
 from handlers import handle_default_request
@@ -61,20 +62,43 @@ logging.basicConfig(
     ]
 )
 
+# формируем список пользовательских подключений
+connections = []
+# и запросов
+requests = []
 
 # запускаем сервер
 try:
     sock = socket.socket()                                  # создаем сокет, по умолчанию tcp-сокет
     sock.bind((host, port))                                 # создаем привязку к адрес:порт
+    sock.setblocking(False)                                 # делаем сервер неблокируемым
     sock.listen(5)                                          # слушаем до 5 подключений одновременно
 #    print(f'Server was started with {host}:{port}')
 #    logger.info(f'Server was started with {host}:{port}')
     logging.info(f'Server was started with {host}:{port}')
     while True:
-        client, address = sock.accept()                     # принимаем запрос на соединение клиента (сокет клиента)
-        b_request = client.recv(buffersize)                 # принято от клиента
-        b_response = handle_default_request(b_request)      # берем логику обработки запроса клиента из handlers, формируем байтовый ответ
-        client.send(b_response)                             # отправляем ответ
-        client.close()                                      # закрываем соединение
+        try:
+            client, address = sock.accept()                     # принимаем запрос на соединение клиента (сокет клиента)
+            logging.info(f'client with address {address} detected') # логируем обнаруженное соединение
+            connections.append(client)                          # добавляем клиентское подключение в списокподключений
+        except:
+            pass
+
+        # определяем списки элементов, открытых для чтения/записи/обработки исключений
+        rlist, wlist, xlist = select.select(connections, connections, connections, 0)
+
+        # print(rlist)
+        # print(wlist)
+
+        for r_client in rlist:
+            b_request = r_client.recv(buffersize)              # принято от клиента
+            requests.append(b_request)                       # добавлено в список запросов
+
+        if requests:                                         # если запросы имеются
+            b_request = requests.pop()                       # то отправляем последний из них
+            b_response = handle_default_request(b_request)   # берем логику обработки запроса клиента из handlers, формируем байтовый ответ
+            for w_client in wlist:
+                w_client.send(b_response)                             # отправляем ответ всем клиента, готовым принимать ответ
+#        client.close()                                      # закрываем соединение
 except KeyboardInterrupt:
     pass

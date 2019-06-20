@@ -14,6 +14,12 @@ parser.add_argument(
 #    required=True                       # по умолчанию False
 )
 
+# описываем вариант запуска клиента в режиме записи
+parser.add_argument(
+    '-m', '--mode', type=str, default='w',
+    help='Sets client mode'
+)
+
 args = parser.parse_args()                              # передаем введенные агрументы
 
 # аргументы по умолчанию
@@ -32,21 +38,26 @@ try:
     sock = socket.socket()                             # создаем сокет, по умолчанию tcp-сокет
     sock.connect((host, port))                         # подключаемся к серверу
     print('Client started')
-    action = input('Input action: ')                   # вводим запрашиваемое дийствие
-    data = input('Input your message: ')               # вводим сообщение
-    hash_obj = hashlib.sha256()                        # формируем объект с хешем, чтобы передать его в поле user запроса к серверу
-    hash_obj.update(str(datetime.now().timestamp()).encode(encoding))   # обновляем "солью" в виде текущей timestamp и кодируем в байтовую последовательность
-    request = {                                        # формируем объект запроса к серверу
-        'action': action,
-        'data': data,
-        'time': datetime.now().timestamp(),            # добавляем временную метку
-        'user': hash_obj.hexdigest()                   # формируем 16-ричное представление объекта hash_obj. без него получим 403 от сервера
-    }
-    s_request = json.dumps(request)                    # формируем строковый запрос
-    b_request = zlib.compress(s_request.encode(encoding))   # формируем сжатый байтовый запрос
-    sock.send(b_request)                               # отправляем сжатое сообщение
-    response = sock.recv(buffersize)                   # получаем ответ
-    b_response = zlib.decompress(response)             # распаковываем ответ сервера
-    print('Server: ', b_response.decode(encoding))     # выводим декодированный ответ сервера
+
+    if args.mode = 'w':                                # если клиент запущен в режиме отправки сообщений
+        while True:                                    # бесконечный цикл
+            hash_obj = hashlib.sha256()  # формируем объект с хешем, чтобы передать его в поле user запроса к серверу
+            hash_obj.update(str(datetime.now().timestamp()).encode(encoding))  # обновляем "солью" в виде текущей timestamp и кодируем в байтовую последовательность
+            action = input('Input action: ')                   # вводим запрашиваемое действие
+            data = input('Input your message: ')               # вводим сообщение
+            request = {                                        # формируем объект запроса к серверу
+                'action': action,
+                'data': data,
+                'time': datetime.now().timestamp(),            # добавляем временную метку
+                'user': hash_obj.hexdigest()                   # формируем 16-ричное представление объекта hash_obj. без него получим 403 от сервера
+            }
+            s_request = json.dumps(request)                    # формируем строковый запрос
+            b_request = zlib.compress(s_request.encode(encoding))   # формируем сжатый байтовый запрос
+            sock.send(b_request)                               # отправляем сжатое сообщение
+    else:                                              # если клиент запущен в режиме чтения
+        while True:                                            # бесконечный цикл
+            response = sock.recv(buffersize)                   # получаем ответ
+            b_response = zlib.decompress(response)             # распаковываем ответ сервера
+            print('Server: ', b_response.decode(encoding))     # выводим декодированный ответ сервера
 except KeyboardInterrupt:
     pass
