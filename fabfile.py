@@ -13,8 +13,11 @@ def server():
     local('python server')
 
 
-def client():
-    local('python client')
+def client(mode='w'):
+    local(f'python client -m {mode}')   # для запуска клиента в режиме read нужно запускать его
+                                        # через fab client:r
+                                        # либо
+                                        # через python client -m r
 
 
 def test():
