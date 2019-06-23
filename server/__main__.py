@@ -3,6 +3,7 @@ import socket
 import json
 import logging
 import select
+import threading
 from argparse import ArgumentParser
 from actions import resolve
 from handlers import handle_default_request
@@ -67,11 +68,24 @@ connections = []
 # и запросов
 requests = []
 
+
+# формируем функцию чтения данных от клиента
+def read(client, requests, buffersize):
+    b_request = client.recv(buffersize)
+    requests.append(b_request)
+
+
+# формируем функцию отправки данных клиенту (всем клиентам, готовым принимать ответ сервера)
+def write(client, response):
+    client.send(response)
+
+
 # запускаем сервер
 try:
     sock = socket.socket()                                  # создаем сокет, по умолчанию tcp-сокет
     sock.bind((host, port))                                 # создаем привязку к адрес:порт
-    sock.setblocking(False)                                 # делаем сервер неблокируемым
+    sock.setblocking(False)                                 # делаем сервер неблокируемым так
+#    sock.settimeout(0)                                     # либо так
     sock.listen(5)                                          # слушаем до 5 подключений одновременно
 #    print(f'Server was started with {host}:{port}')
 #    logger.info(f'Server was started with {host}:{port}')
@@ -84,21 +98,26 @@ try:
         except:
             pass
 
-        # определяем списки элементов, открытых для чтения/записи/обработки исключений
-        rlist, wlist, xlist = select.select(connections, connections, connections, 0)
+        if connections:     # вариант обхода проблемы select в windows
+            # определяем списки элементов, открытых для чтения/записи/обработки исключений
+            rlist, wlist, xlist = select.select(connections, connections, connections, 0)
 
-        # print(rlist)
-        # print(wlist)
+            # print(rlist)
+            # print(wlist)
 
-        for r_client in rlist:
-            b_request = r_client.recv(buffersize)              # принято от клиента
-            requests.append(b_request)                       # добавлено в список запросов
+            for r_client in rlist:
+                r_thread = threading.Thread(target=read, args=(r_client, requests, buffersize))      # формируем объект thread
+                r_thread.start()     # запускаем потоки в цикле, тем самым получаем данные от нескольких одновременно подключенных клиентов
+                # b_request = r_client.recv(buffersize)              # принято от клиента
+                # requests.append(b_request)                       # добавлено в список запросов
 
-        if requests:                                         # если запросы имеются
-            b_request = requests.pop()                       # то отправляем последний из них
-            b_response = handle_default_request(b_request)   # берем логику обработки запроса клиента из handlers, формируем байтовый ответ
-            for w_client in wlist:
-                w_client.send(b_response)                             # отправляем ответ всем клиента, готовым принимать ответ
-#        client.close()                                      # закрываем соединение
+            if requests:                                         # если запросы имеются
+                b_request = requests.pop()                       # то отправляем последний из них
+                b_response = handle_default_request(b_request)   # берем логику обработки запроса клиента из handlers, формируем байтовый ответ
+                for w_client in wlist:
+                    w_thread = threading.Thread(target=write, args=(w_client, b_response))  # формируем объект thread
+                    w_thread.start()  # запускаем потоки в цикле, тем самым отправляем данные от нескольких одновременно подключенных клиентов
+                    # w_client.send(b_response)                             # отправляем ответ всем клиентам, готовым принимать ответ
+    #        client.close()                                      # закрываем соединение
 except KeyboardInterrupt:
     pass
